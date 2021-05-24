@@ -92,7 +92,6 @@ const MainCard = () => {
               id="igaccount"
               label='Link "instagram.com/champagnepapi/"'
               name="IG Account Link"
-              autoFocus
               className={classes.textboxLower}
             />
             <FormControlLabel
