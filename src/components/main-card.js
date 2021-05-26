@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Paper from "@material-ui/core/Paper";
 import { makeStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
@@ -11,10 +11,28 @@ import Container from "@material-ui/core/Container";
 import Link from "@material-ui/core/Link";
 import Grid from "@material-ui/core/Grid";
 import CssBaseline from "@material-ui/core/CssBaseline";
-import CircularProgress from "@material-ui/core/CircularProgress";
 import UserTable from "./table";
+import LinearProgress from "@material-ui/core/LinearProgress";
+import Box from "@material-ui/core/Box";
 
-import { getFollowers } from "../services/axios";
+import data from "../services/results";
+
+import { getFollowers, getStatus } from "../services/axios";
+
+const LinearProgressWithLabel = (props) => {
+  return (
+    <Box display="flex" alignItems="center">
+      <Box width="100%" mr={1}>
+        <LinearProgress variant="determinate" {...props} />
+      </Box>
+      <Box minWidth={35}>
+        <Typography variant="body2" color="textSecondary">{`${Math.round(
+          props.value
+        )}%`}</Typography>
+      </Box>
+    </Box>
+  );
+};
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -55,18 +73,21 @@ const useStyles = makeStyles((theme) => ({
     margin: "10px 0;",
   },
   loader: {
-    display: 'flex',
-    '& > * + *': {
+    display: "flex",
+    "& > * + *": {
       marginLeft: theme.spacing(2),
     },
     margin: "0 auto",
-    flexDirection: 'column',
-    flexWrap: 'nowrap',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    alignContent: 'stretch',
+    flexDirection: "column",
+    flexWrap: "nowrap",
+    justifyContent: "space-around",
+    alignItems: "center",
+    alignContent: "stretch",
     height: "400px",
-  }
+  },
+  linearLoad: {
+    width: "100%",
+  },
 }));
 
 const MainCard = () => {
@@ -77,6 +98,8 @@ const MainCard = () => {
   const [account, setAccount] = useState({ text: null, error: false });
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [totalFollowers, setTotalFollowers] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   const classes = useStyles();
 
@@ -109,132 +132,166 @@ const MainCard = () => {
         password: password.text,
         account: account.text,
       })
-        .then((response) => response)
-        .catch(({ response }) => alert(response.data));
-      console.log(data);
-      setLoading(false);
-      setResults(data.data);
+        .then((response) => response.data)
+        .catch(({ response }) => {
+          alert("API Error, try again");
+          window.location.reload();
+        });
+      setProgress(data?.progress);
+      setTotalFollowers(data?.totalFollowers);
+
+      //setLoading(false);
+      //setResults(data.data);
+
+      const statusInterval = setInterval(async () => {
+        const result = await getStatus()
+          .then((response) => response.data)
+          .catch(({ response }) => {
+            alert(response?.data);
+            clearInterval(statusInterval);
+          });
+        if (!isNaN(result.progress)) {
+          setProgress(result.progress);
+        }
+        if (result.data) {
+          setResults(result.data);
+          clearInterval(statusInterval);
+        }
+      }, 1000);
     }
   };
 
   return (
     <div className={classes.root}>
-      {results && <UserTable data={results}/> }
-      {!results && <Paper elevation={3}>
-        <Container component="main" className={classes.container}>
-          <CssBaseline />
-          {!loading ? (
-            <div className={classes.paper}>
-              <div className={classes.igIconContainer}>
-                <img src={IGIcon} className={classes.igIcon} />
-              </div>
-              <Typography
-                component="h1"
-                variant="h5"
-                className={classes.textbox}
-              >
-                Credentials For The Account To Scrape With
-              </Typography>
-              <Grid item xs className={classes.link}>
-                <Link href="#" variant="body2">
-                  Why do I need this?
-                </Link>
-              </Grid>
-              <div className={classes.form}>
-                <TextField
-                  variant="outlined"
-                  fullWidth
-                  id="username"
-                  label="Username"
-                  name="username"
-                  className={classes.input}
-                  required
-                  error={username.error}
-                  onChange={(data) => onTextEdit(setUsername, data)}
-                  helperText={username.error && "Please enter a username"}
-                />
-                <TextField
-                  variant="outlined"
-                  fullWidth
-                  id="password"
-                  label="Password"
-                  name="password"
-                  className={classes.input}
-                  type="password"
-                  required
-                  error={password.error}
-                  onChange={(data) => onTextEdit(setPassword, data)}
-                  helperText={password.error && "Please enter a password"}
-                />
+      {results && <UserTable data={results} />}
+      {!results && (
+        <Paper elevation={3}>
+          <Container component="main" className={classes.container}>
+            <CssBaseline />
+            {!loading ? (
+              <div className={classes.paper}>
+                <div className={classes.igIconContainer}>
+                  <img src={IGIcon} className={classes.igIcon} />
+                </div>
                 <Typography
                   component="h1"
                   variant="h5"
                   className={classes.textbox}
                 >
-                  IG Account To Scrape
+                  Credentials For The Account To Scrape With
                 </Typography>
-                <TextField
-                  variant="outlined"
-                  fullWidth
-                  id="igaccount"
-                  label="Ex: champagnepapi "
-                  name="IG Account Link"
-                  className={classes.textboxLower}
-                  required
-                  error={account.error}
-                  onChange={(data) => onTextEdit(setAccount, data)}
-                  helperText={account.error && "Please enter an account"}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      value="remember"
-                      color="primary"
-                      checked={followersChecked}
-                      onClick={() => setFollowersChecked(!followersChecked)}
-                      disabled
-                    />
-                  }
-                  label="Followers"
-                />
-                <br></br>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      value="remember"
-                      color="primary"
-                      checked={followingChecked}
-                      onClick={() => setFollowingChecked(!followingChecked)}
-                      disabled
-                    />
-                  }
-                  label="Following"
-                />
-                <Button
-                  fullWidth
-                  variant="contained"
-                  color="primary"
-                  className={classes.submit}
-                  onClick={onScrapeClick}
-                >
-                  Scrape!
-                </Button>
+                <Grid item xs className={classes.link}>
+                  <Link href="#" variant="body2">
+                    Why do I need this?
+                  </Link>
+                </Grid>
+                <div className={classes.form}>
+                  <TextField
+                    variant="outlined"
+                    fullWidth
+                    id="username"
+                    label="Username"
+                    name="username"
+                    className={classes.input}
+                    required
+                    error={username.error}
+                    onChange={(data) => onTextEdit(setUsername, data)}
+                    helperText={username.error && "Please enter a username"}
+                  />
+                  <TextField
+                    variant="outlined"
+                    fullWidth
+                    id="password"
+                    label="Password"
+                    name="password"
+                    className={classes.input}
+                    type="password"
+                    required
+                    error={password.error}
+                    onChange={(data) => onTextEdit(setPassword, data)}
+                    helperText={password.error && "Please enter a password"}
+                  />
+                  <Typography
+                    component="h1"
+                    variant="h5"
+                    className={classes.textbox}
+                  >
+                    IG Account To Scrape
+                  </Typography>
+                  <TextField
+                    variant="outlined"
+                    fullWidth
+                    id="igaccount"
+                    label="Ex: champagnepapi "
+                    name="IG Account Link"
+                    className={classes.textboxLower}
+                    required
+                    error={account.error}
+                    onChange={(data) => onTextEdit(setAccount, data)}
+                    helperText={account.error && "Please enter an account"}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        value="remember"
+                        color="primary"
+                        checked={followersChecked}
+                        onClick={() => setFollowersChecked(!followersChecked)}
+                        disabled
+                      />
+                    }
+                    label="Followers"
+                  />
+                  <br></br>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        value="remember"
+                        color="primary"
+                        checked={followingChecked}
+                        onClick={() => setFollowingChecked(!followingChecked)}
+                        disabled
+                      />
+                    }
+                    label="Following"
+                  />
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    className={classes.submit}
+                    onClick={onScrapeClick}
+                  >
+                    Scrape!
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className={classes.loader}>
-               <Typography
+            ) : (
+              <div className={classes.loader}>
+                <Typography
                   component="h1"
                   variant="h5"
                   className={classes.textbox}
                 >
-                  Scraping....
+                  Getting followers....
                 </Typography>
-              <CircularProgress />
+                <div className={classes.linearLoad}>
+                  <LinearProgressWithLabel
+                    value={Math.floor((progress / totalFollowers) * 100)}
+                  />
+                </div>
+                <Typography
+                  component="h1"
+                  variant="h5"
+                  className={classes.textbox}
+                >
+                  {progress} / {totalFollowers}
+                </Typography>
               </div>
-          )}
-        </Container>
-      </Paper> }
+            )}
+          </Container>
+        </Paper>
+      )}
     </div>
   );
 };

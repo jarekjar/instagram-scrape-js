@@ -17,14 +17,13 @@ const useStyles = makeStyles({
 const UserTable = ({data}) => {
   const classes = useStyles();
 
-  console.log(data)
+  console.log(data);
 
   return (
     <TableContainer component={Paper}>
       <Table className={classes.table} aria-label="simple table">
         <TableHead>
           <TableRow>
-            <TableCell></TableCell>
             <TableCell align="right">Username</TableCell>
             <TableCell align="right">Full Name</TableCell>
             <TableCell align="right">Follows You</TableCell>
@@ -39,9 +38,6 @@ const UserTable = ({data}) => {
             const userData = user.node;
             return (
             <TableRow key={userData.id}>
-              <TableCell scope="row">
-                <img crossorigin="" src={userData.profile_pic_url}></img>
-              </TableCell>
               <TableCell align="right">{userData.username}</TableCell>
               <TableCell align="right">{userData.full_name}</TableCell>
               <TableCell align="right">{userData.follows_viewer ? 'Yes' : 'No'}</TableCell>

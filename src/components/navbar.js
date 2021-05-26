@@ -31,7 +31,7 @@ const NavBar = () => {
     <div className={classes.root}>
       <AppBar position="static">
         <Toolbar>
-          <img src={pikachu} className={classes.pikachu}></img>
+          <img src={pikachu} className={classes.pikachu} onClick={() => window.location.reload()} style={{ cursor: 'pointer'}}></img>
           <Typography variant="h6" className={classes.title}>
             Pikachu's Instagram Scraping App! 
           </Typography>
