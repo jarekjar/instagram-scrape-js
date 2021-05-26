@@ -153,8 +153,8 @@ const MainCard = () => {
         if (!isNaN(result.progress)) {
           setProgress(result.progress);
         }
-        if (result.data) {
-          setResults(result.data);
+        if (result?.[0].node) {
+          setResults(result);
           clearInterval(statusInterval);
         }
       }, 1000);
